@@ -1,40 +1,53 @@
+import streamlit as st
+import numpy as np
+import pandas as pd
+
+st.title("my first app")
+
 @st.cache
-def get_UN_data():
-    AWS_BUCKET_URL = "http://streamlit-demo-data.s3-us-west-2.amazonaws.com"
-    df = pd.read_csv(AWS_BUCKET_URL + "/agri.csv.gz")
-    return df.set_index("Region")
+def load_data():
+    df = pd.read_csv("data.csv")
+    df = df[['EVENT_TYPE', 'CREATE_TIME', 'COUNTY', 'LAT', 'LON']]
+    df.columns = ['event_type', 'time', 'county', 'lat', 'lon']
+    return df
 
-try:
-    df = get_UN_data()
-    countries = st.multiselect(
-        "Choose countries", list(df.index), ["China", "United States of America"]
-    )
-    if not countries:
-        st.error("Please select at least one country.")
-    else:
-        data = df.loc[countries]
-        data /= 1000000.0
-        st.write("### Gross Agricultural Production ($B)", data.sort_index())
+df = load_data()
 
-        data = data.T.reset_index()
-        data = pd.melt(data, id_vars=["index"]).rename(
-            columns={"index": "year", "value": "Gross Agricultural Product ($B)"}
-        )
-        chart = (
-            alt.Chart(data)
-            .mark_area(opacity=0.3)
-            .encode(
-                x="year:T",
-                y=alt.Y("Gross Agricultural Product ($B):Q", stack=None),
-                color="Region:N",
-            )
-        )
-        st.altair_chart(chart, use_container_width=True)
-except URLError as e:
-    st.error(
-        """
-        **This demo requires internet access.**
-        Connection error: %s
-    """
-        % e.reason
-    )
+st.table(df.head())
+
+event_list = df["event_type"].unique()
+
+event_type = st.sidebar.selectbox(
+    "Which kind of event do you want to explore?",
+    event_list
+)
+
+county_list = df["county"].unique()
+
+county_name = st.sidebar.selectbox(
+    "Which county?",
+    county_list
+) 
+
+part_df = df[(df["event_type"]==event_type) & (df['county']==county_name)]
+
+st.write(f"根据你的筛选，数据包含{len(part_df)}行")
+
+st.map(part_df)
+
+st.markdown("""
+欢迎订阅我的微信公众号“玉树芝兰”，**第一时间免费**收到文章更新。别忘了**加星标**，以免错过新推送提示。
+![](https://tva1.sinaimg.cn/large/006tNbRwly1gavw3v4iagj3076076dg2.jpg)
+赞赏就是力量。
+![](https://tva1.sinaimg.cn/large/006tNbRwly1gavw3vhpnpj30b40b4jrs.jpg)
+如果你对 Python 与数据科学感兴趣，希望能与其他热爱学习的小伙伴一起讨论切磋，答疑解惑，欢迎加入知识星球。
+![](https://tva1.sinaimg.cn/large/006tNbRwly1gavw3vz0ahj30dc0hzdgc.jpg)
+""")
+Footer
+© 2022 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Docs
